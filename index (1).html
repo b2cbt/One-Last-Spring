@@ -1,0 +1,134 @@
+function normalizeName(raw) {
+  if (!raw) return "";
+  let s = raw.trim().toLowerCase().replace(/\s+/g, " ");
+
+  // чтобы "Сәнім" и т.п. не ломались
+  const map = { "ә":"а","ғ":"г","қ":"к","ң":"н","ө":"о","ұ":"у","ү":"у","һ":"х","і":"и" };
+  s = s.replace(/[әғқңөұүһі]/g, ch => map[ch] || ch);
+
+  return s;
+}
+
+// запрещённые слова (как ты писал)
+const banned = new Set(["аяна", "геометрия", "кардио"]);
+
+// поздравления (добавляй/меняй как хочешь)
+const messages = {
+  "дина": "Дина, с 8 Марта! 💐\nПусть этой весной будет много радости и улыбок!",
+  "лана": "Лана, с 8 Марта! 💐\nСияй ярко и пусть всё получается легко!",
+  "нурай": "Нурай, с 8 Марта! 🌷\nПусть мечты сбываются и настроение будет супер!",
+  "леян": "Леян, с 8 Марта! ✨\nПусть будет много вдохновения и тепла!"
+};
+
+// имена мальчиков -> фото (сюда вставляешь прямые ссылки на изображения)
+const prankPhotos = {
+  // пример:
+  // "асхат": "https://i.ibb.co/xxxx/askhat.jpg",
+  // "алишер": "https://i.ibb.co/yyyy/alisher.png"
+};
+
+const mainPage = document.getElementById("mainPage");
+const greetPage = document.getElementById("greetPage");
+const form = document.getElementById("nameForm");
+const input = document.getElementById("nameInput");
+const error = document.getElementById("error");
+
+const title = document.getElementById("title");
+const messageEl = document.getElementById("message");
+const photoEl = document.getElementById("photo");
+const backBtn = document.getElementById("backBtn");
+const copyBtn = document.getElementById("copyBtn");
+const copied = document.getElementById("copied");
+
+function showMain() {
+  greetPage.classList.add("hidden");
+  mainPage.classList.remove("hidden");
+
+  error.textContent = "";
+  copied.textContent = "";
+  messageEl.textContent = "";
+
+  photoEl.classList.add("hidden");
+  photoEl.src = "";
+  photoEl.onerror = null;
+
+  input.focus();
+}
+
+function showResult({ mode, text, photoUrl }) {
+  mainPage.classList.add("hidden");
+  greetPage.classList.remove("hidden");
+
+  copied.textContent = "";
+
+  if (mode === "photo") {
+    title.textContent = "😂 Попался!";
+    messageEl.textContent = "";
+
+    photoEl.src = photoUrl;
+    photoEl.classList.remove("hidden");
+
+    photoEl.onerror = () => {
+      photoEl.classList.add("hidden");
+      photoEl.src = "";
+      messageEl.textContent = "Фото не загрузилось 😅\nСсылка должна быть прямой на .jpg/.png/.webp";
+    };
+    return;
+  }
+
+  // mode === "message"
+  title.textContent = "Поздравление 💐";
+  photoEl.classList.add("hidden");
+  photoEl.src = "";
+  photoEl.onerror = null;
+
+  messageEl.textContent = text;
+}
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  error.textContent = "";
+
+  const key = normalizeName(input.value);
+
+  if (!key) {
+    error.textContent = "Введите имя 🙂";
+    return;
+  }
+
+  if (banned.has(key)) {
+    error.textContent = "Это слово запрещено 😈";
+    return;
+  }
+
+  if (prankPhotos[key]) {
+    showResult({ mode: "photo", photoUrl: prankPhotos[key] });
+    return;
+  }
+
+  if (messages[key]) {
+    showResult({ mode: "message", text: messages[key] });
+    return;
+  }
+
+  error.textContent = "Имя не найдено 😅";
+});
+
+backBtn.addEventListener("click", showMain);
+
+copyBtn.addEventListener("click", async () => {
+  const text = (messageEl.textContent || "").trim();
+  if (!text) {
+    copied.textContent = "Тут нечего копировать 🙂";
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    copied.textContent = "Скопировано! 💌";
+    setTimeout(() => copied.textContent = "", 1500);
+  } catch {
+    copied.textContent = "Не получилось 😅 (скопируй вручную)";
+  }
+});
+
+input.focus();
